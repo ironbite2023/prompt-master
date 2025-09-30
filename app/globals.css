@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0a0a0a;
+  --foreground: #ededed;
 }
 
 @theme inline {
@@ -10,17 +10,34 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  
+  /* Custom purple-to-pink gradient colors */
+  --color-purple-600: #9333ea;
+  --color-purple-700: #7e22ce;
+  --color-pink-600: #db2777;
+  --color-pink-700: #be185d;
+  
+  /* Additional dark mode colors */
+  --color-gray-800: #1f2937;
+  --color-gray-900: #111827;
+  --color-gray-700: #374151;
+  --color-gray-600: #4b5563;
+  --color-gray-400: #9ca3af;
+  --color-gray-300: #d1d5db;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+}
+
+/* Gradient utilities */
+.gradient-purple-pink {
+  background: linear-gradient(to right, var(--color-purple-600), var(--color-pink-600));
+}
+
+.gradient-purple-pink-hover:hover {
+  background: linear-gradient(to right, var(--color-purple-700), var(--color-pink-700));
 }

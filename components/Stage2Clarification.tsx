@@ -1,0 +1,105 @@
+'use client';
+
+import React from 'react';
+import { ArrowLeft, Wand2 } from 'lucide-react';
+import { Question } from '@/lib/types';
+import LoadingSpinner from './LoadingSpinner';
+
+interface Stage2ClarificationProps {
+  initialPrompt: string;
+  questions: Question[];
+  answers: Record<number, string>;
+  loading: boolean;
+  onAnswerChange: (index: number, value: string) => void;
+  onBack: () => void;
+  onGenerate: () => void;
+}
+
+const Stage2Clarification: React.FC<Stage2ClarificationProps> = ({
+  initialPrompt,
+  questions,
+  answers,
+  loading,
+  onAnswerChange,
+  onBack,
+  onGenerate
+}) => {
+  const handleAnswerChange = (index: number, e: React.ChangeEvent<HTMLTextAreaElement>): void => {
+    onAnswerChange(index, e.target.value);
+  };
+
+  return (
+    <div className="w-full max-w-4xl mx-auto">
+      <div className="mb-6">
+        <button
+          onClick={onBack}
+          disabled={loading}
+          className="flex items-center gap-2 text-gray-400 hover:text-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          aria-label="Go back to edit prompt"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Edit Initial Prompt</span>
+        </button>
+      </div>
+
+      <div className="bg-gray-800/30 rounded-lg p-4 mb-8 border border-gray-700/30">
+        <h3 className="text-sm font-medium text-gray-400 mb-2">Your Initial Prompt:</h3>
+        <p className="text-gray-200">{initialPrompt}</p>
+      </div>
+
+      <div className="bg-gray-800/50 rounded-xl p-6 backdrop-blur-sm border border-gray-700/50 shadow-xl">
+        <h2 className="text-2xl font-bold mb-2 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+          Help us refine your prompt
+        </h2>
+        <p className="text-gray-400 mb-6">
+          Answer these questions to add important context and details
+        </p>
+
+        <div className="space-y-6">
+          {questions.map((q, index) => (
+            <div key={index} className="space-y-2">
+              <label
+                htmlFor={`question-${index}`}
+                className="block text-sm font-medium text-gray-300"
+              >
+                {index + 1}. {q.question}
+              </label>
+              <textarea
+                id={`question-${index}`}
+                value={answers[index] || ''}
+                onChange={(e) => handleAnswerChange(index, e)}
+                placeholder={q.suggestion}
+                disabled={loading}
+                className="w-full min-h-[100px] px-4 py-3 bg-gray-900/80 border border-gray-600 rounded-lg text-foreground placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-y transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label={`Answer for question ${index + 1}`}
+              />
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-8 flex items-center justify-end gap-4">
+          <button
+            onClick={onGenerate}
+            disabled={loading}
+            className="gradient-purple-pink hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed px-6 py-3 rounded-lg font-medium text-white transition-all duration-200 flex items-center gap-2 shadow-lg"
+            aria-label="Generate super prompt"
+          >
+            {loading ? (
+              <>
+                <LoadingSpinner size="sm" />
+                <span>Generating...</span>
+              </>
+            ) : (
+              <>
+                <Wand2 className="w-5 h-5" />
+                <span>Generate Super Prompt</span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Stage2Clarification;
