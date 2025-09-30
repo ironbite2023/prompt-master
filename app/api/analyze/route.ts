@@ -6,7 +6,7 @@ import { requireAuth } from '@/lib/auth/middleware';
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   // Check authentication
-  const authResult = await requireAuth(request);
+  const authResult = await requireAuth();
   if (authResult instanceof NextResponse) {
     return authResult; // Return 401 error
   }

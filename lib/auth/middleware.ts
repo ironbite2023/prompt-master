@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import type { User } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -8,9 +8,7 @@ interface AuthResult {
   supabase: SupabaseClient;
 }
 
-export async function requireAuth(
-  _request: NextRequest
-): Promise<NextResponse | AuthResult> {
+export async function requireAuth(): Promise<NextResponse | AuthResult> {
   const supabase = await createClient();
 
   const {

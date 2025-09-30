@@ -3,8 +3,8 @@ import { requireAuth } from '@/lib/auth/middleware';
 import { SavePromptRequest } from '@/lib/types';
 
 // GET - Fetch user's prompts
-export async function GET(request: NextRequest): Promise<NextResponse> {
-  const authResult = await requireAuth(request);
+export async function GET(): Promise<NextResponse> {
+  const authResult = await requireAuth();
   if (authResult instanceof NextResponse) {
     return authResult;
   }
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
 // POST - Save new prompt
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const authResult = await requireAuth(request);
+  const authResult = await requireAuth();
   if (authResult instanceof NextResponse) {
     return authResult;
   }
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
 // DELETE - Delete prompt by ID
 export async function DELETE(request: NextRequest): Promise<NextResponse> {
-  const authResult = await requireAuth(request);
+  const authResult = await requireAuth();
   if (authResult instanceof NextResponse) {
     return authResult;
   }
