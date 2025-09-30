@@ -9,7 +9,7 @@ interface AuthResult {
 }
 
 export async function requireAuth(
-  request: NextRequest
+  _request: NextRequest
 ): Promise<NextResponse | AuthResult> {
   const supabase = await createClient();
 

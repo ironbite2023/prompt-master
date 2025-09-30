@@ -9,7 +9,7 @@ interface SignupFormProps {
   onSuccess: () => void;
 }
 
-const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin, onSuccess }) => {
+const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [confirmPassword, setConfirmPassword] = useState<string>('');
