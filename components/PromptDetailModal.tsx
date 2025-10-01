@@ -2,7 +2,9 @@
 
 import React, { useState } from 'react';
 import { SavedPrompt } from '@/lib/types';
-import { X, Copy, Check } from 'lucide-react';
+import { X, Copy, Check, Clock, FileText } from 'lucide-react';
+import CategoryBadge from './CategoryBadge';
+import SubcategoryBadge from './SubcategoryBadge';
 
 interface PromptDetailModalProps {
   prompt: SavedPrompt;
@@ -32,9 +34,27 @@ const PromptDetailModal: React.FC<PromptDetailModalProps> = ({ prompt, onClose }
 
         <div className="p-6 max-h-[80vh] overflow-y-auto">
           {/* Header */}
-          <h2 className="text-2xl font-bold text-white mb-4">
-            Prompt Details
-          </h2>
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-white mb-3">
+              Prompt Details
+            </h2>
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-2 text-sm text-gray-400">
+                <Clock size={16} />
+                {new Date(prompt.created_at).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </div>
+              {/* Category badge */}
+              <CategoryBadge category={prompt.category} size="sm" />
+              {/* Subcategory badge (TASK-08) */}
+              {prompt.subcategory && (
+                <SubcategoryBadge subcategory={prompt.subcategory} size="sm" />
+              )}
+            </div>
+          </div>
 
           {/* Initial Prompt */}
           <div className="mb-6">
@@ -46,8 +66,8 @@ const PromptDetailModal: React.FC<PromptDetailModalProps> = ({ prompt, onClose }
             </div>
           </div>
 
-          {/* Questions and Answers */}
-          {prompt.questions && prompt.questions.length > 0 && (
+          {/* Questions and Answers (only for analyzed prompts) */}
+          {prompt.analysis_mode !== 'manual' && prompt.questions && prompt.questions.length > 0 && (
             <div className="mb-6">
               <h3 className="text-lg font-semibold text-purple-400 mb-2">
                 Questions & Answers
@@ -63,6 +83,21 @@ const PromptDetailModal: React.FC<PromptDetailModalProps> = ({ prompt, onClose }
                     </p>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Manual Mode Notice */}
+          {prompt.analysis_mode === 'manual' && (
+            <div className="mb-6">
+              <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
+                <div className="flex items-center gap-2 text-gray-400 mb-2">
+                  <FileText size={16} />
+                  <span className="font-medium">Manual Entry</span>
+                </div>
+                <p className="text-sm text-gray-500">
+                  This prompt was saved directly without going through the analysis workflow.
+                </p>
               </div>
             </div>
           )}

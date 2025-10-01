@@ -2,20 +2,29 @@
 
 import React from 'react';
 import { Sparkles } from 'lucide-react';
+import { AnalysisMode, PromptTemplate } from '@/lib/types';
 import LoadingSpinner from './LoadingSpinner';
+import AnalysisModeSelector from './AnalysisModeSelector';
+import TemplateSelector from './TemplateSelector';
 
 interface Stage1InitialPromptProps {
   initialPrompt: string;
+  selectedMode: AnalysisMode;
   loading: boolean;
   onPromptChange: (value: string) => void;
+  onModeChange: (mode: AnalysisMode) => void;
   onAnalyze: () => void;
+  onTemplateSelect?: (template: PromptTemplate) => void;
 }
 
 const Stage1InitialPrompt: React.FC<Stage1InitialPromptProps> = ({
   initialPrompt,
+  selectedMode,
   loading,
   onPromptChange,
-  onAnalyze
+  onModeChange,
+  onAnalyze,
+  onTemplateSelect
 }) => {
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>): void => {
     onPromptChange(e.target.value);
@@ -27,10 +36,14 @@ const Stage1InitialPrompt: React.FC<Stage1InitialPromptProps> = ({
     }
   };
 
+  const handleTemplateSelect = (template: PromptTemplate): void => {
+    onTemplateSelect?.(template);
+  };
+
   const isDisabled = !initialPrompt.trim() || loading;
 
   return (
-    <div className="w-full max-w-3xl mx-auto">
+    <div className="w-full max-w-4xl mx-auto space-y-8">
       <div className="text-center mb-8">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full gradient-purple-pink mb-4">
           <Sparkles className="w-8 h-8 text-white" />
@@ -42,6 +55,21 @@ const Stage1InitialPrompt: React.FC<Stage1InitialPromptProps> = ({
           Transform your simple ideas into powerful AI prompts
         </p>
       </div>
+
+      {/* Template Selector - Show when prompt is empty or minimal */}
+      {(!initialPrompt.trim() || initialPrompt.length < 50) && (
+        <TemplateSelector
+          onTemplateSelect={handleTemplateSelect}
+          initialCollapsed={!!initialPrompt.trim()}
+        />
+      )}
+
+      {/* Mode Selector */}
+      <AnalysisModeSelector
+        selectedMode={selectedMode}
+        onModeChange={onModeChange}
+        disabled={loading}
+      />
 
       <div className="bg-gray-800/50 rounded-xl p-6 backdrop-blur-sm border border-gray-700/50 shadow-xl">
         <label htmlFor="initial-prompt" className="block text-sm font-medium text-gray-300 mb-3">

@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Copy, Check, RotateCcw, Sparkles, Save } from 'lucide-react';
-import { Question } from '@/lib/types';
+import React, { useState, useCallback } from 'react';
+import { Copy, Check, RotateCcw, Sparkles, Save, Zap, X } from 'lucide-react';
+import { Question, AnalysisMode } from '@/lib/types';
 import { useAuth } from './providers/AuthProvider';
+import BucketSelector from './BucketSelector';
 
 interface Stage3SuperPromptProps {
   superPrompt: string;
@@ -11,6 +12,7 @@ interface Stage3SuperPromptProps {
   initialPrompt: string;
   questions: Question[];
   answers: Record<number, string>;
+  mode?: AnalysisMode; // TASK-08: Optional mode tracking
 }
 
 const Stage3SuperPrompt: React.FC<Stage3SuperPromptProps> = ({
@@ -18,12 +20,17 @@ const Stage3SuperPrompt: React.FC<Stage3SuperPromptProps> = ({
   onStartOver,
   initialPrompt,
   questions,
-  answers
+  answers,
+  mode
 }) => {
   const [copied, setCopied] = useState<boolean>(false);
   const [saved, setSaved] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
+  const [selectedBucketId, setSelectedBucketId] = useState<string | null>(null);
+  const [showBucketSelector, setShowBucketSelector] = useState<boolean>(false);
+  const [showAnalysis, setShowAnalysis] = useState<boolean>(false);
   const { user } = useAuth();
+  const isAIMode = mode === AnalysisMode.AI;
 
   const handleCopy = async (): Promise<void> => {
     try {
@@ -46,8 +53,12 @@ const Stage3SuperPrompt: React.FC<Stage3SuperPromptProps> = ({
     }
   };
 
-  const handleSave = async (): Promise<void> => {
-    if (!user || saving || saved) return;
+  const handleSaveClick = useCallback((): void => {
+    setShowBucketSelector(true);
+  }, []);
+
+  const handleSave = useCallback(async (): Promise<void> => {
+    if (!user || saving || saved || !selectedBucketId) return;
 
     setSaving(true);
 
@@ -62,6 +73,7 @@ const Stage3SuperPrompt: React.FC<Stage3SuperPromptProps> = ({
           questions,
           answers,
           superPrompt,
+          bucketId: selectedBucketId,
         }),
       });
 
@@ -72,16 +84,38 @@ const Stage3SuperPrompt: React.FC<Stage3SuperPromptProps> = ({
       }
 
       setSaved(true);
+      setShowBucketSelector(false);
     } catch (error) {
       console.error('Error saving prompt:', error);
       alert('Failed to save prompt. Please try again.');
     } finally {
       setSaving(false);
     }
-  };
+  }, [user, saving, saved, selectedBucketId, initialPrompt, questions, answers, superPrompt]);
 
   return (
     <div className="w-full max-w-4xl mx-auto">
+      {/* AI Mode Badge (TASK-08) */}
+      {isAIMode && (
+        <div className="mb-6 p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Zap className="w-5 h-5 text-green-400" />
+              <p className="text-sm text-green-400 font-medium">
+                This super prompt was generated using AI Mode with automated analysis.
+              </p>
+            </div>
+                          <button
+              onClick={() => setShowAnalysis(true)}
+              className="text-xs text-green-400 hover:text-green-300 underline transition-colors"
+              aria-label="View AI's analysis"
+            >
+              View AI&apos;s Analysis
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="text-center mb-8">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full gradient-purple-pink mb-4 animate-pulse">
           <Sparkles className="w-8 h-8 text-white" />
@@ -125,32 +159,63 @@ const Stage3SuperPrompt: React.FC<Stage3SuperPromptProps> = ({
           {superPrompt}
         </div>
 
+        {/* Bucket Selection Modal */}
+        {showBucketSelector && user && !saved && (
+          <div className="mt-6 bg-gray-900/80 border border-purple-500/30 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-300 mb-4">
+              Choose a bucket to save this prompt
+            </h3>
+            <BucketSelector
+              selectedBucketId={selectedBucketId}
+              onSelect={setSelectedBucketId}
+            />
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={handleSave}
+                disabled={!selectedBucketId || saving}
+                className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-700 disabled:to-gray-700 disabled:cursor-not-allowed rounded-lg transition-colors font-medium text-white shadow-lg"
+              >
+                {saving ? (
+                  <>
+                    <Save className="w-5 h-5 animate-pulse" />
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-5 h-5" />
+                    <span>Save to Bucket</span>
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => setShowBucketSelector(false)}
+                className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors font-medium text-white"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
-          {user && (
+          {user && !saved && !showBucketSelector && (
             <button
-              onClick={handleSave}
-              disabled={saving || saved}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg transition-colors font-medium text-white shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleSaveClick}
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg transition-colors font-medium text-white shadow-lg"
               aria-label="Save prompt to history"
             >
-              {saved ? (
-                <>
-                  <Check className="w-5 h-5" />
-                  <span>Saved to History</span>
-                </>
-              ) : saving ? (
-                <>
-                  <Save className="w-5 h-5 animate-pulse" />
-                  <span>Saving...</span>
-                </>
-              ) : (
-                <>
-                  <Save className="w-5 h-5" />
-                  <span>Save to History</span>
-                </>
-              )}
+              <Save className="w-5 h-5" />
+              <span>Save to History</span>
             </button>
           )}
+          
+          {saved && (
+            <div className="flex items-center gap-2 px-6 py-3 bg-green-600/20 border border-green-500/30 rounded-lg font-medium text-green-400">
+              <Check className="w-5 h-5" />
+              <span>Saved to History</span>
+            </div>
+          )}
+
           <button
             onClick={onStartOver}
             className="flex items-center gap-2 px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors font-medium text-white shadow-lg"
@@ -167,6 +232,49 @@ const Stage3SuperPrompt: React.FC<Stage3SuperPromptProps> = ({
           💡 <strong>Tip:</strong> Test this super prompt with different AI models like ChatGPT, Claude, or Gemini to see which produces the best results!
         </p>
       </div>
+
+      {/* AI Analysis Modal (TASK-08) */}
+      {showAnalysis && isAIMode && (
+        <div 
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowAnalysis(false)}
+        >
+          <div 
+            className="bg-gray-800 rounded-xl max-w-3xl w-full max-h-[80vh] overflow-y-auto p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-white">AI&apos;s Analysis</h3>
+              <button
+                onClick={() => setShowAnalysis(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+                aria-label="Close modal"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <p className="text-sm text-gray-400 mb-4">
+              These are the questions AI generated and auto-filled to create your super prompt:
+            </p>
+
+            <div className="space-y-4">
+              {questions.map((q, index) => (
+                <div key={index} className="bg-gray-900/50 p-4 rounded-lg">
+                  <p className="text-sm font-medium text-gray-300 mb-2">
+                    {index + 1}. {q.question}
+                  </p>
+                  <div className="bg-green-500/10 p-3 rounded border border-green-500/30">
+                    <p className="text-sm text-green-400">
+                      {answers[index] || 'No answer provided'}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
