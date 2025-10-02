@@ -6,6 +6,8 @@ import Stage1InitialPrompt from '@/components/Stage1InitialPrompt';
 import Stage2Clarification from '@/components/Stage2Clarification';
 import Stage3SuperPrompt from '@/components/Stage3SuperPrompt';
 import AIModeProgress from '@/components/AIModeProgress';
+import AnalysisLoadingScreen from '@/components/AnalysisLoadingScreen';
+import GenerationLoadingScreen from '@/components/GenerationLoadingScreen';
 import ErrorMessage from '@/components/ErrorMessage';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -19,6 +21,7 @@ const HomePage: React.FC = () => {
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [superPrompt, setSuperPrompt] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
+  const [loadingStage, setLoadingStage] = useState<'analyze' | 'generate' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
   
@@ -53,6 +56,7 @@ const HomePage: React.FC = () => {
     if (!initialPrompt.trim()) return;
 
     setLoading(true);
+    setLoadingStage('analyze');
     setError(null);
 
     try {
@@ -111,6 +115,7 @@ const HomePage: React.FC = () => {
       setError(errorMessage);
     } finally {
       setLoading(false);
+      setLoadingStage(null);
     }
   }, [initialPrompt, selectedMode, user]);
 
@@ -128,6 +133,7 @@ const HomePage: React.FC = () => {
 
   const handleGenerate = useCallback(async (): Promise<void> => {
     setLoading(true);
+    setLoadingStage('generate');
     setError(null);
 
     try {
@@ -161,6 +167,7 @@ const HomePage: React.FC = () => {
       setError(errorMessage);
     } finally {
       setLoading(false);
+      setLoadingStage(null);
     }
   }, [initialPrompt, questions, answers, selectedMode]);
 
@@ -172,6 +179,7 @@ const HomePage: React.FC = () => {
     setAnswers({});
     setSuperPrompt('');
     setError(null);
+    setLoadingStage(null);
   }, []);
 
   const handleDismissError = useCallback((): void => {
@@ -185,17 +193,25 @@ const HomePage: React.FC = () => {
         <div className="max-w-7xl mx-auto">
           {error && <ErrorMessage message={error} onDismiss={handleDismissError} />}
           
-          {/* AI Mode Progress Indicator */}
-          {loading && selectedMode === AnalysisMode.AI && (
+          {/* Loading Screens Based on Stage and Mode */}
+          {loading && loadingStage === 'analyze' && selectedMode === AnalysisMode.AI && (
             <AIModeProgress />
           )}
           
-          {/* Stage 1: Initial Prompt */}
+          {loading && loadingStage === 'analyze' && selectedMode !== AnalysisMode.AI && (
+            <AnalysisLoadingScreen mode={selectedMode} />
+          )}
+          
+          {loading && loadingStage === 'generate' && (
+            <GenerationLoadingScreen mode={selectedMode} />
+          )}
+          
+          {/* Stage 1: Initial Prompt - Only hide during loading */}
           {!loading && currentStage === Stage.INITIAL_PROMPT && (
             <Stage1InitialPrompt
               initialPrompt={initialPrompt}
               selectedMode={selectedMode}
-              loading={loading || authLoading}
+              loading={authLoading}
               onPromptChange={handlePromptChange}
               onModeChange={handleModeChange}
               onAnalyze={handleAnalyze}
@@ -203,20 +219,22 @@ const HomePage: React.FC = () => {
             />
           )}
 
-          {currentStage === Stage.CLARIFICATION && (
+          {/* Stage 2: Clarification - Only show when not loading */}
+          {!loading && currentStage === Stage.CLARIFICATION && (
             <Stage2Clarification
               initialPrompt={initialPrompt}
               questions={questions}
               answers={answers}
               mode={selectedMode}
-              loading={loading}
+              loading={false}
               onAnswerChange={handleAnswerChange}
               onBack={handleBack}
               onGenerate={handleGenerate}
             />
           )}
 
-          {currentStage === Stage.SUPER_PROMPT && (
+          {/* Stage 3: Super Prompt - Only show when not loading */}
+          {!loading && currentStage === Stage.SUPER_PROMPT && (
             <Stage3SuperPrompt
               superPrompt={superPrompt}
               onStartOver={handleStartOver}
