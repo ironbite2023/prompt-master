@@ -522,10 +522,30 @@ export interface ExportResponse {
 }
 
 /**
+ * Database prompt row structure
+ */
+export interface PromptData {
+  id: string;
+  title: string | null;
+  original_idea: string;
+  optimized_prompt: string;
+  questionnaire_data: Record<string, unknown>;
+  analysis_data: Record<string, unknown> | null;
+  variables_used: string[] | null;
+  tags: string[] | null;
+  usage_count: number;
+  is_favorite: boolean;
+  created_at: string;
+  updated_at: string;
+  user_id: string;
+  bucket_id: string | null;
+}
+
+/**
  * Combined prompt data for export
  */
 export interface PromptWithAnswers {
-  prompt: any; // Full prompt database row
+  prompt: PromptData;
   bucket: Bucket | null;
   answers: PromptAnswer[];
 }

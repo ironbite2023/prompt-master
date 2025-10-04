@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth/middleware';
+import { PromptAnswer } from '@/lib/types';
 
 /**
  * =====================================================
@@ -131,7 +132,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // ========================================
     // 6. GROUP ANSWERS BY PROMPT ID
     // ========================================
-    const answersByPromptId: Record<string, any[]> = {};
+    const answersByPromptId: Record<string, PromptAnswer[]> = {};
     
     (answers || []).forEach(answer => {
       if (!answersByPromptId[answer.prompt_id]) {

@@ -7,8 +7,9 @@ import {
   generateCSV, 
   downloadCSV, 
   generateFilename,
-  validateExportData 
+  validateExportData
 } from '@/lib/exportUtils';
+import { PromptWithAnswers } from '@/lib/types';
 
 /**
  * =====================================================
@@ -94,7 +95,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({
       // ========================================
       // 4. TRANSFORM TO CSV FORMAT
       // ========================================
-      const exportRows = result.data.map((item: any) => 
+      const exportRows = result.data.map((item: PromptWithAnswers) => 
         flattenPromptData(item.prompt, item.bucket, item.answers)
       );
       
@@ -118,8 +119,8 @@ const ExportButton: React.FC<ExportButtonProps> = ({
         onSuccess(result.count);
       }
       
-    } catch (err: any) {
-      const errorMessage = err.message || 'Export failed';
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Export failed';
       setError(errorMessage);
       console.error('❌ Export error:', err);
       

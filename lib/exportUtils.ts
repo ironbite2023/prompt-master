@@ -1,20 +1,11 @@
 import Papa from 'papaparse';
-import { PromptAnswer } from './types';
+import { PromptAnswer, Bucket, PromptData, PromptWithAnswers } from './types';
 
 /**
  * =====================================================
  * TYPE DEFINITIONS
  * =====================================================
  */
-
-/**
- * Combined prompt data for export
- */
-export interface PromptWithAnswers {
-  prompt: any; // Database row format
-  bucket: any | null;
-  answers: PromptAnswer[];
-}
 
 /**
  * Flattened row structure for CSV export
@@ -111,8 +102,8 @@ const getLatestAnswer = (answers: PromptAnswer[]): PromptAnswer | null => {
  * @returns Flattened ExportRow ready for CSV conversion (12 columns)
  */
 export const flattenPromptData = (
-  prompt: any,
-  bucket: any | null,
+  prompt: PromptData,
+  bucket: Bucket | null,
   answers: PromptAnswer[]
 ): ExportRow => {
   // Extract questionnaire_data (JSONB field)
@@ -126,6 +117,11 @@ export const flattenPromptData = (
   // Get latest playground answer
   const latestAnswer = getLatestAnswer(answers);
   
+  // Helper to safely extract string values from unknown types
+  const getString = (value: unknown, defaultValue: string): string => {
+    return typeof value === 'string' ? value : defaultValue;
+  };
+  
   return {
     // Identification
     title: prompt.title || 'Untitled',
@@ -133,9 +129,9 @@ export const flattenPromptData = (
     
     // Organization
     bucket_name: bucket?.name || 'Uncategorized',
-    category: questionnaireData.category || 'general',
-    subcategory: questionnaireData.subcategory || '',
-    analysis_mode: questionnaireData.analysisMode || 'manual',
+    category: getString(questionnaireData.category, 'general'),
+    subcategory: getString(questionnaireData.subcategory, ''),
+    analysis_mode: getString(questionnaireData.analysisMode, 'manual'),
     
     // Core content (the most important data!)
     original_idea: prompt.original_idea || '',
