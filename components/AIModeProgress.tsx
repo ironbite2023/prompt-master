@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Zap, Loader2, CheckCircle2, Brain, MessageSquare, Sparkles } from 'lucide-react';
 
 type Step = {
@@ -14,11 +14,11 @@ const AIModeProgress: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<number>(0);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
 
-  const steps: Step[] = [
+  const steps: Step[] = useMemo(() => [
     { id: 0, label: 'Analyzing prompt and generating clarifying questions', icon: Brain, duration: 5000 },
     { id: 1, label: 'Auto-filling context with intelligent answers', icon: MessageSquare, duration: 8000 },
     { id: 2, label: 'Creating optimized super prompt', icon: Sparkles, duration: 7000 },
-  ];
+  ], []);
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;

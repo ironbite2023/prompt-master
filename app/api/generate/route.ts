@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getGeminiClient, DEFAULT_MODEL } from '@/lib/gemini';
+import { getGeminiClient, DEFAULT_MODEL, getCreativeConfig, GEMINI_CONFIG } from '@/lib/gemini';
 import { GENERATION_PROMPT } from '@/lib/prompts';
 import { requireAuth } from '@/lib/auth/middleware';
 
@@ -46,14 +46,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     contextText += '\n\nNow generate the comprehensive super prompt:';
 
-    // Generate the super prompt
+    // Generate the super prompt using centralized config
     const response = await ai.models.generateContent({
       model: DEFAULT_MODEL,
       contents: contextText,
-      config: {
-        temperature: 0.7,  // Slightly lower for more consistent, focused quality
-        maxOutputTokens: 8192,  // Higher limit for comprehensive super prompts
-      }
+      config: getCreativeConfig(GEMINI_CONFIG.maxOutputTokens.generation)
     });
 
     // Extract the response text

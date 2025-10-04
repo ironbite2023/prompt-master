@@ -29,8 +29,63 @@ const Stage3SuperPrompt: React.FC<Stage3SuperPromptProps> = ({
   const [selectedBucketId, setSelectedBucketId] = useState<string | null>(null);
   const [showBucketSelector, setShowBucketSelector] = useState<boolean>(false);
   const [showAnalysis, setShowAnalysis] = useState<boolean>(false);
+  const [title, setTitle] = useState<string>('');           // 🆕 NEW: Title state
+  const [titleError, setTitleError] = useState<string>(''); // 🆕 NEW: Title error state
   const { user } = useAuth();
   const isAIMode = mode === AnalysisMode.AI;
+
+  // 🆕 NEW: Generate smart title suggestion from initial prompt
+  const suggestTitle = useCallback((): string => {
+    const cleaned = initialPrompt.trim()
+      .replace(/\n/g, ' ')           // Replace newlines with spaces
+      .replace(/\s+/g, ' ')          // Collapse multiple spaces
+      .replace(/[^\w\s-]/g, '');     // Remove special chars except dash
+    
+    if (cleaned.length <= 60) {
+      return cleaned;
+    }
+    
+    // Find last complete word within 60 chars
+    const truncated = cleaned.substring(0, 60);
+    const lastSpace = truncated.lastIndexOf(' ');
+    
+    if (lastSpace > 40) {
+      return truncated.substring(0, lastSpace) + '...';
+    }
+    
+    return truncated.substring(0, 57) + '...';
+  }, [initialPrompt]);
+
+  // 🆕 NEW: Auto-fill title when modal opens
+  React.useEffect(() => {
+    if (showBucketSelector && !title) {
+      setTitle(suggestTitle());
+    }
+  }, [showBucketSelector, title, suggestTitle]);
+
+  // 🆕 NEW: Validate title
+  const validateTitle = useCallback((value: string): boolean => {
+    const trimmed = value.trim();
+    
+    if (trimmed.length < 3) {
+      setTitleError('Title must be at least 3 characters');
+      return false;
+    }
+    
+    if (trimmed.length > 100) {
+      setTitleError('Title must not exceed 100 characters');
+      return false;
+    }
+    
+    setTitleError('');
+    return true;
+  }, []);
+
+  const handleTitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>): void => {
+    const value = e.target.value;
+    setTitle(value);
+    validateTitle(value);
+  }, [validateTitle]);
 
   const handleCopy = async (): Promise<void> => {
     try {
@@ -60,6 +115,11 @@ const Stage3SuperPrompt: React.FC<Stage3SuperPromptProps> = ({
   const handleSave = useCallback(async (): Promise<void> => {
     if (!user || saving || saved || !selectedBucketId) return;
 
+    // 🆕 Validate title before saving
+    if (!validateTitle(title)) {
+      return;
+    }
+
     setSaving(true);
 
     try {
@@ -69,6 +129,7 @@ const Stage3SuperPrompt: React.FC<Stage3SuperPromptProps> = ({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          title: title.trim(),        // 🆕 NEW: Include title
           initialPrompt,
           questions,
           answers,
@@ -91,7 +152,7 @@ const Stage3SuperPrompt: React.FC<Stage3SuperPromptProps> = ({
     } finally {
       setSaving(false);
     }
-  }, [user, saving, saved, selectedBucketId, initialPrompt, questions, answers, superPrompt]);
+  }, [user, saving, saved, selectedBucketId, title, validateTitle, initialPrompt, questions, answers, superPrompt]);
 
   return (
     <div className="w-full max-w-4xl mx-auto">
@@ -163,16 +224,48 @@ const Stage3SuperPrompt: React.FC<Stage3SuperPromptProps> = ({
         {showBucketSelector && user && !saved && (
           <div className="mt-6 bg-gray-900/80 border border-purple-500/30 rounded-lg p-6">
             <h3 className="text-lg font-semibold text-gray-300 mb-4">
-              Choose a bucket to save this prompt
+              Save Prompt
             </h3>
-            <BucketSelector
-              selectedBucketId={selectedBucketId}
-              onSelect={setSelectedBucketId}
-            />
+            
+            {/* 🆕 NEW: Title Input */}
+            <div className="mb-4">
+              <label htmlFor="prompt-title" className="block text-sm font-medium text-gray-300 mb-2">
+                Prompt Title <span className="text-red-400">*</span>
+              </label>
+              <input
+                id="prompt-title"
+                type="text"
+                value={title}
+                onChange={handleTitleChange}
+                placeholder="e.g., Blog Post Generator, SEO Analysis Tool..."
+                maxLength={100}
+                className={`w-full bg-gray-800 border ${
+                  titleError ? 'border-red-500' : 'border-gray-700'
+                } rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent`}
+              />
+              {titleError && (
+                <p className="mt-1 text-sm text-red-400">{titleError}</p>
+              )}
+              <p className="mt-1 text-xs text-gray-500">
+                {title.length}/100 characters
+              </p>
+            </div>
+
+            {/* Bucket Selector */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Select Bucket <span className="text-red-400">*</span>
+              </label>
+              <BucketSelector
+                selectedBucketId={selectedBucketId}
+                onSelect={setSelectedBucketId}
+              />
+            </div>
+
             <div className="flex gap-3 mt-4">
               <button
                 onClick={handleSave}
-                disabled={!selectedBucketId || saving}
+                disabled={!selectedBucketId || !title.trim() || !!titleError || saving}
                 className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-700 disabled:to-gray-700 disabled:cursor-not-allowed rounded-lg transition-colors font-medium text-white shadow-lg"
               >
                 {saving ? (
@@ -183,12 +276,16 @@ const Stage3SuperPrompt: React.FC<Stage3SuperPromptProps> = ({
                 ) : (
                   <>
                     <Save className="w-5 h-5" />
-                    <span>Save to Bucket</span>
+                    <span>Save Prompt</span>
                   </>
                 )}
               </button>
               <button
-                onClick={() => setShowBucketSelector(false)}
+                onClick={() => {
+                  setShowBucketSelector(false);
+                  setTitle('');
+                  setTitleError('');
+                }}
                 className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors font-medium text-white"
               >
                 Cancel

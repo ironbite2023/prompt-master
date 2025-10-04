@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getGeminiClient, DEFAULT_MODEL } from '@/lib/gemini';
+import { getGeminiClient, DEFAULT_MODEL, getAnalysisConfig } from '@/lib/gemini';
 import {
   AI_MODE_ANALYSIS_PROMPT,
   NORMAL_MODE_ANALYSIS_PROMPT,
@@ -58,15 +58,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Initialize Gemini client
     const ai = getGeminiClient();
 
-    // Generate clarifying questions
+    // Generate clarifying questions using centralized config + mode-specific overrides
     const fullPrompt = analysisPrompt + prompt;
     
     const response = await ai.models.generateContent({
       model: DEFAULT_MODEL,
       contents: fullPrompt,
       config: {
-        temperature: config.temperature,
-        maxOutputTokens: config.maxOutputTokens,
+        ...getAnalysisConfig(config.maxOutputTokens),
+        temperature: config.temperature, // Mode-specific temperature override
       }
     });
 
@@ -74,7 +74,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const responseText = response.text;
     
     if (!responseText) {
-      throw new Error('No response from AI model');
+      console.error('Gemini response object:', JSON.stringify(response, null, 2));
+      throw new Error('No response from AI model - check logs for details');
     }
 
     // Parse response based on mode

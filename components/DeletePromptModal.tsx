@@ -76,9 +76,10 @@ const DeletePromptModal: React.FC<DeletePromptModalProps> = ({
             <CategoryBadge category={prompt.category} size="sm" />
           </div>
 
-          {/* Prompt Content Preview */}
-          <p className="text-gray-300 text-sm mb-3 line-clamp-3">
-            &quot;{prompt.initial_prompt}&quot;
+          {/* 🆕 UPDATED: Title + Prompt Preview */}
+          <p className="text-white font-semibold mb-2">{prompt.title}</p>
+          <p className="text-gray-400 text-sm mb-3 line-clamp-2">
+            {prompt.initial_prompt}
           </p>
 
           {/* Creation Date */}

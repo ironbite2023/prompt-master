@@ -11,7 +11,9 @@ import CategoryFilter from '@/components/CategoryFilter';
 import PromptDetailModal from '@/components/PromptDetailModal';
 import DeletePromptModal from '@/components/DeletePromptModal';
 import QuickSaveModal from '@/components/QuickSaveModal';
-import { Clock, Trash2, Eye, Folder, Settings, Plus, FileText } from 'lucide-react';
+import PromptPlaygroundModal from '@/components/PromptPlaygroundModal';
+import { Clock, Trash2, Eye, Folder, Settings, Plus, FileText, Play } from 'lucide-react';
+import ExportButton from '@/components/ExportButton';
 
 const HistoryPage: React.FC = () => {
   const [prompts, setPrompts] = useState<SavedPrompt[]>([]);
@@ -23,6 +25,7 @@ const HistoryPage: React.FC = () => {
   const [selectedPrompt, setSelectedPrompt] = useState<SavedPrompt | null>(null);
   const [deletingPrompt, setDeletingPrompt] = useState<SavedPrompt | null>(null);
   const [showQuickSaveModal, setShowQuickSaveModal] = useState<boolean>(false);
+  const [playgroundPrompt, setPlaygroundPrompt] = useState<SavedPrompt | null>(null);
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
 
@@ -188,6 +191,24 @@ const HistoryPage: React.FC = () => {
                 <span>Quick Save Prompt</span>
               </button>
               
+              {/* Export All Button */}
+              <ExportButton 
+                scope="all" 
+                label="Export All"
+                variant="secondary"
+              />
+              
+              {/* Export Bucket Button (Conditional) */}
+              {selectedBucketId && (
+                <ExportButton
+                  scope="bucket"
+                  bucketId={selectedBucketId}
+                  bucketName={buckets.find(b => b.id === selectedBucketId)?.name}
+                  label="Export Bucket"
+                  variant="secondary"
+                />
+              )}
+              
               <button
                 onClick={() => router.push('/settings/buckets')}
                 className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-sm font-medium text-white"
@@ -293,8 +314,12 @@ const HistoryPage: React.FC = () => {
                           )}
                         </div>
 
+                        {/* 🆕 UPDATED: Title + Prompt Preview */}
                         <div className="mb-4">
-                          <p className="text-gray-300 line-clamp-3 mb-2">
+                          <h3 className="text-lg font-semibold text-white mb-2 line-clamp-2">
+                            {prompt.title}
+                          </h3>
+                          <p className="text-gray-400 text-sm line-clamp-2 mb-2">
                             {prompt.initial_prompt}
                           </p>
                           <div className="flex items-center gap-2 text-sm text-gray-500">
@@ -311,6 +336,19 @@ const HistoryPage: React.FC = () => {
                             <Eye size={16} />
                             View
                           </button>
+                          <button
+                            onClick={() => setPlaygroundPrompt(prompt)}
+                            className="flex items-center justify-center gap-2 bg-green-600/20 text-green-400 py-2 px-4 rounded-lg text-sm font-medium hover:bg-green-600/30 transition-all"
+                            aria-label="Try in Playground"
+                            tabIndex={0}
+                          >
+                            <Play size={16} />
+                          </button>
+                          <ExportButton
+                            scope="prompt"
+                            promptId={prompt.id}
+                            variant="icon"
+                          />
                           <button
                             onClick={() => handleDeleteClick(prompt.id)}
                             className="flex items-center justify-center gap-2 bg-red-600/20 text-red-400 py-2 px-4 rounded-lg text-sm font-medium hover:bg-red-600/30 transition-all"
@@ -339,6 +377,7 @@ const HistoryPage: React.FC = () => {
         <PromptDetailModal
           prompt={selectedPrompt}
           onClose={() => setSelectedPrompt(null)}
+          onOpenPlayground={setPlaygroundPrompt}
         />
       )}
 
@@ -357,6 +396,14 @@ const HistoryPage: React.FC = () => {
           isOpen={showQuickSaveModal}
           onClose={() => setShowQuickSaveModal(false)}
           onSave={handleQuickSave}
+        />
+      )}
+
+      {/* Playground Modal */}
+      {playgroundPrompt && (
+        <PromptPlaygroundModal
+          prompt={playgroundPrompt}
+          onClose={() => setPlaygroundPrompt(null)}
         />
       )}
     </>

@@ -121,14 +121,15 @@ export interface Bucket {
 export interface SavedPrompt {
   id: string;
   user_id: string;
-  initial_prompt: string;
-  questions: Question[] | null;
-  answers: Record<number, string> | null;
-  super_prompt: string;
+  title: string; // TASK-13: User-provided descriptive title
+  initial_prompt: string; // Mapped from 'original_idea' in DB
+  questions: Question[] | null; // From questionnaire_data.questions
+  answers: Record<number, string> | null; // From questionnaire_data.answers
+  super_prompt: string; // Mapped from 'optimized_prompt' in DB
   bucket_id: string;
-  category: PromptCategory; // Added category field
-  subcategory?: PromptSubcategory | null; // TASK-08: Optional subcategory for granular classification
-  analysis_mode: AnalysisMode; // NEW: Track analysis mode used
+  category: PromptCategory; // From questionnaire_data.category
+  subcategory?: PromptSubcategory | null; // From questionnaire_data.subcategory
+  analysis_mode: AnalysisMode; // From questionnaire_data.analysisMode
   created_at: string;
   bucket?: Bucket; // Optional joined bucket data
 }
@@ -140,6 +141,7 @@ export interface PromptsResponse {
 }
 
 export interface SavePromptRequest {
+  title: string; // TASK-13: Required title field
   initialPrompt: string;
   questions: Question[];
   answers: Record<number, string>;
@@ -410,6 +412,7 @@ export interface TemplateSelectEvent {
  * Request type for quick saving prompts without analysis
  */
 export interface QuickSavePromptRequest {
+  title: string;                   // TASK-13: Required title field
   promptText: string;              // The actual prompt content
   bucketId: string;                // Required bucket selection
   category: PromptCategory;        // Required category
@@ -423,4 +426,106 @@ export interface QuickSaveResponse {
   success: boolean;
   promptId?: string;
   error?: string;
+}
+
+// =====================================================
+// PROMPT PLAYGROUND TYPES (TASK-12)
+// =====================================================
+
+/**
+ * Stored answer from Playground testing
+ */
+export interface PromptAnswer {
+  id: string;
+  prompt_id: string;
+  user_id: string;
+  answer_text: string;
+  notes: string | null;
+  tokens_used: number | null;
+  generation_time_ms: number | null;
+  created_at: string;
+}
+
+/**
+ * Request to test a prompt in the Playground
+ */
+export interface PlaygroundTestRequest {
+  promptId: string;
+  promptText: string; // The actual prompt to send to Gemini
+}
+
+/**
+ * Response from Playground test endpoint
+ */
+export interface PlaygroundTestResponse {
+  success: boolean;
+  answer: string;
+  tokensUsed?: number;
+  generationTime: number;
+  error?: string;
+}
+
+/**
+ * Request to save an answer from Playground
+ */
+export interface SaveAnswerRequest {
+  promptId: string;
+  answerText: string;
+  notes?: string;
+  tokensUsed?: number;
+  generationTime?: number;
+}
+
+/**
+ * Response from save answer endpoint
+ */
+export interface SaveAnswerResponse {
+  success: boolean;
+  answerId?: string;
+  error?: string;
+}
+
+/**
+ * Response when fetching saved answers
+ */
+export interface PromptAnswersResponse {
+  answers: PromptAnswer[];
+  error?: string;
+}
+
+/**
+ * Configuration for answer soft limit warning
+ */
+export const ANSWER_SOFT_LIMIT = 10;
+
+// =====================================================
+// CSV EXPORT TYPES (TASK-16)
+// =====================================================
+
+/**
+ * Request parameters for export API
+ */
+export interface ExportRequest {
+  scope: 'prompt' | 'bucket' | 'all';
+  promptId?: string;
+  bucketId?: string;
+}
+
+/**
+ * Response from export API
+ */
+export interface ExportResponse {
+  success: boolean;
+  data: PromptWithAnswers[];
+  count: number;
+  error?: string;
+}
+
+/**
+ * Combined prompt data for export
+ */
+export interface PromptWithAnswers {
+  prompt: any; // Full prompt database row
+  bucket: Bucket | null;
+  answers: PromptAnswer[];
 }

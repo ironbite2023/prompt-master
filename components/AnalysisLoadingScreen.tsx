@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Sparkles, Brain, Lightbulb, Loader2, CheckCircle2 } from 'lucide-react';
 import { AnalysisMode } from '@/lib/types';
 import { MODE_METADATA } from '@/lib/modeConfig';
@@ -24,7 +24,7 @@ const AnalysisLoadingScreen: React.FC<AnalysisLoadingScreenProps> = ({ mode }) =
   const isExtensive = mode === AnalysisMode.EXTENSIVE;
 
   // Define steps based on mode
-  const steps: Step[] = isExtensive
+  const steps: Step[] = useMemo(() => isExtensive
     ? [
         { id: 0, label: 'Analyzing prompt structure and intent', icon: Brain, duration: 3000 },
         { id: 1, label: 'Identifying key concepts and requirements', icon: Lightbulb, duration: 3000 },
@@ -35,7 +35,7 @@ const AnalysisLoadingScreen: React.FC<AnalysisLoadingScreenProps> = ({ mode }) =
         { id: 0, label: 'Analyzing prompt structure', icon: Brain, duration: 2500 },
         { id: 1, label: 'Generating clarifying questions', icon: Sparkles, duration: 3500 },
         { id: 2, label: 'Preparing your analysis...', icon: CheckCircle2, duration: 2000 },
-      ];
+      ], [isExtensive]);
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;

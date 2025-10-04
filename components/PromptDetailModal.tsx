@@ -2,16 +2,17 @@
 
 import React, { useState } from 'react';
 import { SavedPrompt } from '@/lib/types';
-import { X, Copy, Check, Clock, FileText } from 'lucide-react';
+import { X, Copy, Check, Clock, FileText, Play } from 'lucide-react';
 import CategoryBadge from './CategoryBadge';
 import SubcategoryBadge from './SubcategoryBadge';
 
 interface PromptDetailModalProps {
   prompt: SavedPrompt;
   onClose: () => void;
+  onOpenPlayground?: (prompt: SavedPrompt) => void;
 }
 
-const PromptDetailModal: React.FC<PromptDetailModalProps> = ({ prompt, onClose }) => {
+const PromptDetailModal: React.FC<PromptDetailModalProps> = ({ prompt, onClose, onOpenPlayground }) => {
   const [copied, setCopied] = useState<boolean>(false);
 
   const handleCopy = async (): Promise<void> => {
@@ -54,6 +55,13 @@ const PromptDetailModal: React.FC<PromptDetailModalProps> = ({ prompt, onClose }
                 <SubcategoryBadge subcategory={prompt.subcategory} size="sm" />
               )}
             </div>
+          </div>
+
+          {/* 🆕 NEW: Title Display */}
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-white">
+              {prompt.title}
+            </h2>
           </div>
 
           {/* Initial Prompt */}
@@ -132,6 +140,21 @@ const PromptDetailModal: React.FC<PromptDetailModalProps> = ({ prompt, onClose }
                 </>
               )}
             </button>
+            
+            {/* Playground Button */}
+            {onOpenPlayground && (
+              <button
+                onClick={() => {
+                  onOpenPlayground(prompt);
+                  onClose();
+                }}
+                className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg font-medium transition-all"
+                tabIndex={0}
+              >
+                <Play size={20} />
+                Try in Playground
+              </button>
+            )}
           </div>
         </div>
       </div>

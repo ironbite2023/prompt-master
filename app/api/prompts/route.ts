@@ -45,7 +45,25 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     if (error) throw error;
 
-    return NextResponse.json({ prompts: prompts || [] });
+    // Map database fields to expected TypeScript interface
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const mappedPrompts = (prompts || []).map((prompt: any) => ({
+      id: prompt.id,
+      user_id: prompt.user_id,
+      title: prompt.title,
+      initial_prompt: prompt.original_idea,
+      super_prompt: prompt.optimized_prompt,
+      bucket_id: prompt.bucket_id,
+      questions: prompt.questionnaire_data?.questions || null,
+      answers: prompt.questionnaire_data?.answers || null,
+      category: prompt.questionnaire_data?.category || 'general-other',
+      subcategory: prompt.questionnaire_data?.subcategory || null,
+      analysis_mode: prompt.questionnaire_data?.analysisMode || 'manual',
+      created_at: prompt.created_at,
+      bucket: prompt.bucket
+    }));
+
+    return NextResponse.json({ prompts: mappedPrompts });
   } catch (error) {
     console.error('Error fetching prompts:', error);
     return NextResponse.json(
@@ -92,9 +110,24 @@ async function handleQuickSave(
   user: any, // eslint-disable-line @typescript-eslint/no-explicit-any
   supabase: any // eslint-disable-line @typescript-eslint/no-explicit-any
 ): Promise<NextResponse> {
-  const { promptText, bucketId, category, subcategory } = body;
+  const { title, promptText, bucketId, category } = body;
 
-  // Validation
+  // 🆕 VALIDATION: Title
+  if (!title || title.trim().length < 3) {
+    return NextResponse.json(
+      { error: 'Title must be at least 3 characters' },
+      { status: 400 }
+    );
+  }
+
+  if (title.trim().length > 100) {
+    return NextResponse.json(
+      { error: 'Title must not exceed 100 characters' },
+      { status: 400 }
+    );
+  }
+
+  // Validation: Prompt text
   if (!promptText || promptText.trim().length < 10) {
     return NextResponse.json(
       { error: 'Prompt text must be at least 10 characters' },
@@ -131,33 +164,34 @@ async function handleQuickSave(
     );
   }
 
-  // Save prompt with manual mode
+  // Save prompt with manual mode - USE RAW SQL to bypass PostgREST schema cache
+  // Convert user.id to string to match RLS policy requirement
+  const userId = typeof user.id === 'string' ? user.id : user.id?.toString();
+  
+  console.log(`🔐 Attempting save - user_id: ${userId}, bucket_id: ${bucketId}`);
+  
+  // Use RPC/SQL query instead of .from() to bypass schema cache issues
   const { data, error } = await supabase
-    .from('prompts')
-    .insert({
-      user_id: user.id,
-      initial_prompt: promptText.trim(),
-      questions: null,                    // No questions for quick save
-      answers: null,                      // No answers for quick save  
-      super_prompt: promptText.trim(),    // Same as initial for quick save
-      bucket_id: bucketId,
-      category: category,
-      subcategory: subcategory || null,   // Optional subcategory
-      analysis_mode: AnalysisMode.MANUAL  // 🆕 Mark as manual entry
-    })
-    .select()
-    .single();
+    .rpc('insert_prompt_manual', {
+      p_user_id: userId,
+      p_title: title.trim(),
+      p_original_idea: promptText.trim(),
+      p_optimized_prompt: promptText.trim(),
+      p_bucket_id: bucketId
+    });
 
   if (error) {
     console.error('Database error during quick save:', error);
     throw error;
   }
 
-  console.log(`✅ Quick saved prompt: ${data.id} (${category}${subcategory ? ' > ' + subcategory : ''})`);
+  // RPC functions return arrays, so get first result
+  const savedPrompt = Array.isArray(data) ? data[0] : data;
+  console.log(`✅ Quick saved prompt: ${savedPrompt.id} - "${title}"`);
 
   return NextResponse.json({ 
     success: true, 
-    promptId: data.id 
+    promptId: savedPrompt.id 
   });
 }
 
@@ -167,7 +201,22 @@ async function handleNormalSave(
   user: any, // eslint-disable-line @typescript-eslint/no-explicit-any
   supabase: any // eslint-disable-line @typescript-eslint/no-explicit-any
 ): Promise<NextResponse> {
-  const { initialPrompt, questions, answers, superPrompt, bucketId, category } = body;
+  const { title, initialPrompt, questions, answers, superPrompt, bucketId, category } = body;
+
+  // 🆕 VALIDATION: Title
+  if (!title || title.trim().length < 3) {
+    return NextResponse.json(
+      { error: 'Title must be at least 3 characters' },
+      { status: 400 }
+    );
+  }
+
+  if (title.trim().length > 100) {
+    return NextResponse.json(
+      { error: 'Title must not exceed 100 characters' },
+      { status: 400 }
+    );
+  }
 
   if (!initialPrompt || !superPrompt) {
     return NextResponse.json(
@@ -212,25 +261,38 @@ async function handleNormalSave(
     console.log(`Categorized as: ${finalCategory} > ${finalSubcategory} (confidence: ${classification.confidence})`);
   }
 
+  // Store questions/answers in questionnaire_data JSONB field
+  const questionnaireData = {
+    questions: questions || [],
+    answers: answers || {},
+    category: finalCategory,
+    subcategory: finalSubcategory,
+    analysisMode: AnalysisMode.NORMAL
+  };
+
+  // Convert user.id to string to match RLS policy requirement
+  const userId = typeof user.id === 'string' ? user.id : user.id?.toString();
+  
+  console.log(`🔐 Attempting normal save - user_id: ${userId}, bucket_id: ${bucketId}`);
+
+  // Use RPC/SQL query instead of .from() to bypass PostgREST schema cache issues
   const { data, error } = await supabase
-    .from('prompts')
-    .insert({
-      user_id: user.id,
-      initial_prompt: initialPrompt,
-      questions: questions || [],
-      answers: answers || {},
-      super_prompt: superPrompt,
-      bucket_id: bucketId,
-      category: finalCategory,
-      subcategory: finalSubcategory,
-      analysis_mode: AnalysisMode.NORMAL  // Default for analyzed prompts
-    })
-    .select()
-    .single();
+    .rpc('insert_prompt_normal', {
+      p_user_id: userId,
+      p_title: title.trim(),
+      p_original_idea: initialPrompt,
+      p_optimized_prompt: superPrompt,
+      p_bucket_id: bucketId,
+      p_questionnaire_data: questionnaireData
+    });
 
   if (error) throw error;
 
-  return NextResponse.json({ success: true, promptId: data.id });
+  // RPC functions return arrays, so get first result
+  const savedPrompt = Array.isArray(data) ? data[0] : data;
+  console.log(`✅ Saved prompt: ${savedPrompt.id} - "${title}"`);
+
+  return NextResponse.json({ success: true, promptId: savedPrompt.id });
 }
 
 // DELETE - Delete prompt by ID

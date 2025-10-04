@@ -19,12 +19,56 @@ const QuickSaveModal: React.FC<QuickSaveModalProps> = ({
   onClose,
   onSave
 }) => {
+  const [title, setTitle] = useState('');                           // 🆕 NEW: Title state
   const [promptText, setPromptText] = useState('');
   const [selectedBucketId, setSelectedBucketId] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<PromptCategory | null>(null);
   const [selectedSubcategory, setSelectedSubcategory] = useState<PromptSubcategory | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [titleError, setTitleError] = useState<string>('');        // 🆕 NEW: Title error
+
+  // 🆕 NEW: Validate title
+  const validateTitle = useCallback((value: string): boolean => {
+    const trimmed = value.trim();
+    
+    if (trimmed.length < 3) {
+      setTitleError('Title must be at least 3 characters');
+      return false;
+    }
+    
+    if (trimmed.length > 100) {
+      setTitleError('Title must not exceed 100 characters');
+      return false;
+    }
+    
+    setTitleError('');
+    return true;
+  }, []);
+
+  const handleTitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>): void => {
+    const value = e.target.value;
+    setTitle(value);
+    validateTitle(value);
+  }, [validateTitle]);
+
+  // 🆕 NEW: Auto-suggest title from prompt text
+  const suggestTitleFromPrompt = useCallback((): void => {
+    if (title || !promptText.trim()) return;
+    
+    const firstLine = promptText.trim().split('\n')[0];
+    const cleaned = firstLine
+      .replace(/[^\w\s-]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    
+    const suggested = cleaned.length <= 60 
+      ? cleaned 
+      : cleaned.substring(0, 57) + '...';
+    
+    setTitle(suggested);
+    validateTitle(suggested);
+  }, [title, promptText, validateTitle]);
 
   // Reset subcategory when category changes
   const handleCategoryChange = useCallback((category: PromptCategory) => {
@@ -35,6 +79,8 @@ const QuickSaveModal: React.FC<QuickSaveModalProps> = ({
 
   // Form validation
   const canSave = 
+    title.trim().length >= 3 &&          // 🆕 NEW: Title validation
+    !titleError &&                        // 🆕 NEW: No title errors
     promptText.trim().length >= 10 &&
     selectedBucketId !== null &&
     selectedCategory !== null &&
@@ -43,11 +89,17 @@ const QuickSaveModal: React.FC<QuickSaveModalProps> = ({
   const handleSave = async (): Promise<void> => {
     if (!canSave) return;
 
+    // Final validation
+    if (!validateTitle(title)) {
+      return;
+    }
+
     setSaving(true);
     setError(null);
 
     try {
       await onSave({
+        title: title.trim(),              // 🆕 NEW: Include title
         promptText: promptText.trim(),
         bucketId: selectedBucketId!,
         category: selectedCategory!,
@@ -55,10 +107,12 @@ const QuickSaveModal: React.FC<QuickSaveModalProps> = ({
       });
 
       // Reset form on success
+      setTitle('');
       setPromptText('');
       setSelectedBucketId(null);
       setSelectedCategory(null);
       setSelectedSubcategory(null);
+      setTitleError('');
       onClose();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to save prompt';
@@ -77,11 +131,13 @@ const QuickSaveModal: React.FC<QuickSaveModalProps> = ({
   // Reset form when modal opens
   React.useEffect(() => {
     if (isOpen) {
+      setTitle('');
       setPromptText('');
       setSelectedBucketId(null);
       setSelectedCategory(null);
       setSelectedSubcategory(null);
       setError(null);
+      setTitleError('');
     }
   }, [isOpen]);
 
@@ -138,11 +194,46 @@ const QuickSaveModal: React.FC<QuickSaveModalProps> = ({
                 </div>
               )}
 
+              {/* 🆕 NEW: Title Input */}
+              <div className="space-y-2">
+                <label htmlFor="prompt-title-quick" className="block text-sm font-medium text-gray-300">
+                  Prompt Title <span className="text-red-400">*</span>
+                </label>
+                <input
+                  id="prompt-title-quick"
+                  type="text"
+                  value={title}
+                  onChange={handleTitleChange}
+                  placeholder="e.g., Marketing Email Template, Code Review Checklist..."
+                  maxLength={100}
+                  className={`w-full bg-gray-800 border ${
+                    titleError ? 'border-red-500' : 'border-gray-700'
+                  } rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent`}
+                />
+                {titleError ? (
+                  <p className="text-sm text-red-400">{titleError}</p>
+                ) : (
+                  <p className="text-xs text-gray-500">
+                    {title.length}/100 characters
+                  </p>
+                )}
+              </div>
+
               {/* Prompt Text Input */}
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-300">
-                  Prompt Text <span className="text-red-400">*</span>
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm font-medium text-gray-300">
+                    Prompt Text <span className="text-red-400">*</span>
+                  </label>
+                  {promptText.trim() && !title && (
+                    <button
+                      onClick={suggestTitleFromPrompt}
+                      className="text-xs text-purple-400 hover:text-purple-300 transition-colors"
+                    >
+                      Suggest title from prompt ✨
+                    </button>
+                  )}
+                </div>
                 <textarea
                   value={promptText}
                   onChange={(e) => setPromptText(e.target.value)}

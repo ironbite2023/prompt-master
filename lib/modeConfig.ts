@@ -1,28 +1,30 @@
 import { AnalysisMode, AnalysisModeMetadata, ModeConfig } from './types';
+import { GEMINI_CONFIG } from './gemini';
 
 /**
  * Configuration for each analysis mode
+ * References centralized GEMINI_CONFIG from lib/gemini.ts
  */
 export const MODE_CONFIGS: Record<AnalysisMode, ModeConfig> = {
   [AnalysisMode.AI]: {
     minQuestions: 4,
     maxQuestions: 6,
-    temperature: 0.7,
-    maxOutputTokens: 3072,
+    temperature: GEMINI_CONFIG.temperature.balanced,
+    maxOutputTokens: GEMINI_CONFIG.maxOutputTokens.analysis,
     autoAnswer: true,
   },
   [AnalysisMode.NORMAL]: {
     minQuestions: 4,
     maxQuestions: 6,
-    temperature: 0.7,
-    maxOutputTokens: 2048,
+    temperature: GEMINI_CONFIG.temperature.balanced,
+    maxOutputTokens: GEMINI_CONFIG.maxOutputTokens.analysis,
     autoAnswer: false,
   },
   [AnalysisMode.EXTENSIVE]: {
     minQuestions: 8,
     maxQuestions: 12,
-    temperature: 0.8,
-    maxOutputTokens: 4096,
+    temperature: GEMINI_CONFIG.temperature.creative,
+    maxOutputTokens: GEMINI_CONFIG.maxOutputTokens.extensive,
     autoAnswer: false,
   },
   [AnalysisMode.MANUAL]: {

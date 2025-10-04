@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getGeminiClient, DEFAULT_MODEL } from '@/lib/gemini';
+import { getGeminiClient, DEFAULT_MODEL, getAnalysisConfig, getCreativeConfig, GEMINI_CONFIG } from '@/lib/gemini';
 import { AI_MODE_ANALYSIS_PROMPT, GENERATION_PROMPT } from '@/lib/prompts';
 import { Question, AnalysisMode } from '@/lib/types';
 import { requireAuth } from '@/lib/auth/middleware';
@@ -35,10 +35,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const analysisResponse = await ai.models.generateContent({
       model: DEFAULT_MODEL,
       contents: AI_MODE_ANALYSIS_PROMPT + prompt,
-      config: {
-        temperature: 0.7,
-        maxOutputTokens: 3072,
-      }
+      config: getAnalysisConfig(GEMINI_CONFIG.maxOutputTokens.analysis)
     });
 
     let questions: Question[];
@@ -85,10 +82,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const generationResponse = await ai.models.generateContent({
       model: DEFAULT_MODEL,
       contents: generationPromptText,
-      config: {
-        temperature: 0.8,
-        maxOutputTokens: 2048,
-      }
+      config: getCreativeConfig(GEMINI_CONFIG.maxOutputTokens.generation)
     });
 
     const superPrompt = generationResponse.text || '';

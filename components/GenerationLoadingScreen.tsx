@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Wand2, FileText, Sparkles, Loader2, CheckCircle2, Zap } from 'lucide-react';
 import { AnalysisMode } from '@/lib/types';
 import { MODE_METADATA } from '@/lib/modeConfig';
@@ -23,12 +23,12 @@ const GenerationLoadingScreen: React.FC<GenerationLoadingScreenProps> = ({ mode 
   const modeMetadata = MODE_METADATA[mode];
   const isExtensive = mode === AnalysisMode.EXTENSIVE;
 
-  const steps: Step[] = [
+  const steps: Step[] = useMemo(() => [
     { id: 0, label: 'Processing your answers and context', icon: FileText, duration: 2500 },
     { id: 1, label: 'Crafting optimized super prompt', icon: Wand2, duration: 4000 },
     { id: 2, label: 'Applying refinements and enhancements', icon: Sparkles, duration: 3000 },
     { id: 3, label: 'Finalizing your super prompt...', icon: Zap, duration: 2000 },
-  ];
+  ], []);
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;

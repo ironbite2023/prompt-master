@@ -253,6 +253,23 @@ Edit `lib/prompts.ts` to customize how the AI analyzes prompts and generates que
 
 Modify temperature and token limits in API routes (`app/api/analyze/route.ts` and `app/api/generate/route.ts`).
 
+## 📚 Documentation
+
+Comprehensive documentation is available in the [`docs/`](./docs/) folder:
+
+- **[📖 Documentation Index](./docs/README.md)** - Start here for complete documentation
+- **[🎯 Project Overview](./docs/PROJECT_OVERVIEW.md)** - High-level application summary
+- **[👨‍💻 Developer Guide](./docs/guides/DEVELOPER_GUIDE.md)** - Setup and development workflow
+- **[👤 User Guide](./docs/guides/USER_GUIDE.md)** - How to use Prompt Master
+- **[🔌 API Reference](./docs/api/API_REFERENCE.md)** - Complete API documentation
+- **[🏗️ System Architecture](./docs/architecture/SYSTEM_ARCHITECTURE.md)** - Technical design
+- **[💾 Database Schema](./docs/database/SCHEMA_DOCUMENTATION.md)** - Database structure
+- **[✅ Task History](./docs/tasks/README.md)** - Feature implementation timeline
+- **[🚀 Deployment Guide](./docs/guides/DEPLOYMENT_GUIDE.md)** - Production deployment
+- **[📝 Changelog](./docs/project/CHANGELOG.md)** - Version history
+
+For quick start instructions, see [Quick Start Guide](./docs/guides/QUICK_START.md).
+
 ## 🐛 Troubleshooting
 
 ### API Key Error
