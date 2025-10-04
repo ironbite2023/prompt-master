@@ -1,4 +1,4 @@
-const CACHE_NAME = 'prompt-master-v1';
+const CACHE_NAME = 'prompt-master-v2';
 const urlsToCache = [
   '/',
   '/manifest.json',
@@ -20,6 +20,16 @@ self.addEventListener('install', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
+
+  // Skip non-http(s) requests (chrome-extension, data, blob, etc.)
+  if (!url.protocol.startsWith('http')) {
+    return;
+  }
+
+  // Skip cross-origin requests
+  if (url.origin !== location.origin) {
+    return;
+  }
 
   // Network-first for API calls
   if (url.pathname.startsWith('/api/')) {
@@ -59,6 +69,10 @@ self.addEventListener('fetch', (event) => {
 
           return response;
         });
+      }).catch((error) => {
+        console.error('Fetch failed:', error);
+        // Return a fallback response or rethrow
+        throw error;
       })
   );
 });
